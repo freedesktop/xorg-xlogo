@@ -1,4 +1,4 @@
-/* $XdotOrg: Logo.c,v 1.4 2001/02/09 02:05:54 xorgcvs Exp $ */
+/* $XdotOrg: xc/programs/xlogo/Logo.c,v 1.2 2004/04/23 19:54:57 eich Exp $ */
 /* $Xorg: Logo.c,v 1.4 2001/02/09 02:05:54 xorgcvs Exp $ */
 /*
 
