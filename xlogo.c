@@ -1,5 +1,5 @@
 /*
- * $Xorg: xlogo.c,v 1.4 2001/02/09 02:05:54 xorgcvs Exp $
+ * $Xorg: xlogo.c,v 1.5 2004/05/09 02:05:54 gisburn Exp $
  *
 Copyright 1989, 1998  The Open Group
 
@@ -27,18 +27,22 @@ in this Software without prior written authorization from The Open Group.
 
 /* $XFree86: xc/programs/xlogo/xlogo.c,v 3.7 2001/07/25 15:05:26 dawes Exp $ */
 
-#include <stdio.h>
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
+#include "xlogo.h"
 #include "Logo.h"
-#include <X11/Xaw/Cardinals.h>
+#include "print.h"
 #ifdef XKB
 #include <X11/extensions/XKBbells.h>
 #endif
+#include <stdio.h>
 #include <stdlib.h>
 
-static void quit(Widget w, XEvent *event, String *params, 
-		 Cardinal *num_params);
+/* Global vars*/
+const char *ProgramName;    /* program name (from argv[0]) */
+
+static void quit(Widget w,  XEvent *event, String *params, Cardinal *num_params);
+static void print(Widget w, XEvent *event, String *params, Cardinal *num_params);
 
 static XrmOptionDescRec options[] = {
 { "-shape", "*shapeWindow", XrmoptionNoArg, (XPointer) "on" },
@@ -46,25 +50,45 @@ static XrmOptionDescRec options[] = {
 {"-render", "*render",XrmoptionNoArg, "TRUE"},
 {"-sharp", "*sharp", XrmoptionNoArg, "TRUE"},
 #endif
+{"-v",         "Verbose",     XrmoptionNoArg,  "TRUE"},
+{"-print",     "Print",       XrmoptionNoArg,  "TRUE"},
+{"-printer",   "printer",     XrmoptionSepArg, NULL},
+{"-printfile", "printFile",   XrmoptionSepArg, NULL},
 };
 
 static XtActionsRec actions[] = {
-    {"quit",	quit}
+    {"quit",	quit },
+    {"print",	print}
 };
 
 static Atom wm_delete_window;
 
+/* See xlogo.h */
+XLogoResourceData userOptions;
+
+#define Offset(field) XtOffsetOf(XLogoResourceData, field)
+
+XtResource resources[] = {
+  {"verbose",   "Verbose",   XtRBoolean, sizeof(Boolean), Offset(verbose),      XtRImmediate, (XtPointer)False},
+  {"print",     "Print",     XtRBoolean, sizeof(Boolean), Offset(printAndExit), XtRImmediate, (XtPointer)False},
+  {"printer",   "Printer",   XtRString,  sizeof(String),  Offset(printername),  XtRImmediate, (XtPointer)NULL},
+  {"printFile", "PrintFile", XtRString,  sizeof(String),  Offset(printfile),    XtRImmediate, (XtPointer)NULL}
+};
+
+
 String fallback_resources[] = {
     "*iconPixmap:    xlogo32",
     "*iconMask:      xlogo32",
+    "*baseTranslations: #override \\"
+                        "\t<Key>q: quit()\\n\\"
+                        "\t<Key>p: print()",
     NULL,
 };
 
 static void 
 die(Widget w, XtPointer client_data, XtPointer call_data)
 {
-    XCloseDisplay(XtDisplay(w));
-    exit(0);
+    XtAppSetExitFlag(XtWidgetToApplicationContext(w));
 }
 
 static void 
@@ -78,34 +102,33 @@ save(Widget w, XtPointer client_data, XtPointer call_data)
  */
 
 static void 
-Syntax(Widget toplevel, char *call)
+Syntax(Widget toplevel)
 {
     Arg arg;
     SmcConn connection;
-    String reasons[7];
-    int i, num_reasons = 7;
+    String reasons[10];
+    int i, n = 0;
 
-    reasons[0] = "Usage: ";
-    reasons[1] = call;
-    reasons[2] = " [-fg <color>] [-bg <color>] [-rv] [-bw <pixels>] [-bd <color>]\n";
-    reasons[3] = "             [-d [<host>]:[<vs>]]\n";
-    reasons[4] = "             [-g [<width>][x<height>][<+-><xoff>[<+-><yoff>]]]\n";
+    reasons[n++] = "Usage: ";
+    reasons[n++] = (String)ProgramName;
+    reasons[n++] = " [-fg <color>] [-bg <color>] [-rv] [-bw <pixels>] [-bd <color>]\n";
+    reasons[n++] = "             [-d [<host>]:[<vs>]]\n";
+    reasons[n++] = "             [-g [<width>][x<height>][<+-><xoff>[<+-><yoff>]]]\n";
+    reasons[n++] = "             [-print] [-printname <name>] [-printfile <file>]\n";
 #ifdef XRENDER
-    reasons[5] = "             [-render] [-sharp]\n";
-#else
-    reasons[5] = "";
-#endif
-    reasons[6] = "             [-shape]\n\n";
+    reasons[n++] = "             [-render] [-sharp]\n";
+#endif /* XRENDER */
+    reasons[n++] = "             [-shape]\n\n";
 
     XtSetArg(arg, XtNconnection, &connection);
     XtGetValues(toplevel, &arg, (Cardinal)1);
     if (connection) 
-	SmcCloseConnection(connection, num_reasons, reasons);
+	SmcCloseConnection(connection, n, reasons);
     else {
-	for (i=0; i < num_reasons; i++)
+	for (i=0; i < n; i++)
 	    printf(reasons[i]);
     }
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 int 
@@ -114,27 +137,40 @@ main(int argc, char *argv[])
     Widget toplevel;
     XtAppContext app_con;
 
+    ProgramName = argv[0];
+
     toplevel = XtOpenApplication(&app_con, "XLogo",
 				 options, XtNumber(options), 
 				 &argc, argv, fallback_resources,
 				 sessionShellWidgetClass, NULL, ZERO);
     if (argc != 1)
-	Syntax(toplevel, argv[0]);
+	Syntax(toplevel);
 
-    XtAddCallback(toplevel, XtNsaveCallback, save, NULL);
-    XtAddCallback(toplevel, XtNdieCallback, die, NULL);
-    XtAppAddActions
-	(XtWidgetToApplicationContext(toplevel), actions, XtNumber(actions));
-    XtOverrideTranslations
-	(toplevel, XtParseTranslationTable ("<Message>WM_PROTOCOLS: quit()"));
-    XtCreateManagedWidget("xlogo", logoWidgetClass, toplevel, NULL, ZERO);
-    XtRealizeWidget(toplevel);
-    wm_delete_window = XInternAtom(XtDisplay(toplevel), "WM_DELETE_WINDOW",
-				   False);
-    (void) XSetWMProtocols (XtDisplay(toplevel), XtWindow(toplevel),
-                            &wm_delete_window, 1);
+    XtGetApplicationResources(toplevel, (XtPointer)&userOptions, resources, 
+                              XtNumber(resources), NULL, 0);
+
+    XtAppAddActions(app_con, actions, XtNumber(actions));
+
+    if (userOptions.printAndExit) {
+        XtCallActionProc(toplevel, "print", NULL, NULL, 0);
+    }
+    else
+    {
+        XtAddCallback(toplevel, XtNsaveCallback, save, NULL);
+        XtAddCallback(toplevel, XtNdieCallback,  die,  NULL);
+        XtOverrideTranslations
+          (toplevel, XtParseTranslationTable ("<Message>WM_PROTOCOLS: quit()"));
+        XtCreateManagedWidget("xlogo", logoWidgetClass, toplevel, NULL, ZERO);
+        XtRealizeWidget(toplevel);
+        wm_delete_window = XInternAtom(XtDisplay(toplevel), "WM_DELETE_WINDOW",
+                                       False);
+        (void) XSetWMProtocols (XtDisplay(toplevel), XtWindow(toplevel),
+                                &wm_delete_window, 1);
+    }
+
     XtAppMainLoop(app_con);
-    exit(0);
+
+    return EXIT_SUCCESS;
 }
 
 /*ARGSUSED*/
@@ -142,9 +178,9 @@ static void
 quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
 {
     Arg arg;
-
+    
     if (event->type == ClientMessage && 
-	event->xclient.data.l[0] != wm_delete_window) {
+	(Atom)event->xclient.data.l[0] != wm_delete_window) {
 #ifdef XKB
 	XkbStdBell(XtDisplay(w), XtWindow(w), 0, XkbBI_BadValue);
 #else
@@ -157,4 +193,12 @@ quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
 	die(w, NULL, NULL);
     }
 }
+
+/*ARGSUSED*/
+static void 
+print(Widget w, XEvent *event, String *params, Cardinal *num_params)
+{
+    DoPrint(w, userOptions.printername, userOptions.printfile);
+}
+
 
