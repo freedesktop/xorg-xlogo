@@ -33,9 +33,9 @@ in this Software without prior written authorization from The Open Group.
 #include "xlogo.h"
 #include "Logo.h"
 #include <X11/Xaw/Cardinals.h>
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
 #include "print.h"
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 #ifdef XKB
 #include <X11/extensions/XKBbells.h>
 #endif
@@ -46,9 +46,9 @@ in this Software without prior written authorization from The Open Group.
 const char *ProgramName;    /* program name (from argv[0]) */
 
 static void quit(Widget w,  XEvent *event, String *params, Cardinal *num_params);
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
 static void print(Widget w, XEvent *event, String *params, Cardinal *num_params);
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 
 static XrmOptionDescRec options[] = {
 { "-shape", "*shapeWindow", XrmoptionNoArg, (XPointer) "on" },
@@ -57,18 +57,18 @@ static XrmOptionDescRec options[] = {
 {"-sharp", "*sharp", XrmoptionNoArg, "TRUE"},
 #endif
 {"-v",         "Verbose",     XrmoptionNoArg,  "TRUE"},
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
 {"-print",     "Print",       XrmoptionNoArg,  "TRUE"},
 {"-printer",   "printer",     XrmoptionSepArg, NULL},
 {"-printfile", "printFile",   XrmoptionSepArg, NULL},
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 static XtActionsRec actions[] = {
     {"quit",	quit },
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
     {"print",	print}
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 static Atom wm_delete_window;
@@ -80,11 +80,11 @@ XLogoResourceData userOptions;
 
 XtResource resources[] = {
   {"verbose",   "Verbose",   XtRBoolean, sizeof(Boolean), Offset(verbose),      XtRImmediate, (XtPointer)False},
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
   {"print",     "Print",     XtRBoolean, sizeof(Boolean), Offset(printAndExit), XtRImmediate, (XtPointer)False},
   {"printer",   "Printer",   XtRString,  sizeof(String),  Offset(printername),  XtRImmediate, (XtPointer)NULL},
   {"printFile", "PrintFile", XtRString,  sizeof(String),  Offset(printfile),    XtRImmediate, (XtPointer)NULL}
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 
@@ -92,12 +92,12 @@ String fallback_resources[] = {
     "*iconPixmap:    xlogo32",
     "*iconMask:      xlogo32",
     "*baseTranslations: #override \\"
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
                         "\t<Key>q: quit()\\n\\"
                         "\t<Key>p: print()",
-#else
+#else /* !INCLUDE_XPRINT_SUPPORT */
                         "\t<Key>q: quit()",
-#endif
+#endif /* !INCLUDE_XPRINT_SUPPORT */
     NULL,
 };
 
@@ -130,9 +130,9 @@ Syntax(Widget toplevel)
     reasons[n++] = " [-fg <color>] [-bg <color>] [-rv] [-bw <pixels>] [-bd <color>]\n";
     reasons[n++] = "             [-d [<host>]:[<vs>]]\n";
     reasons[n++] = "             [-g [<width>][x<height>][<+-><xoff>[<+-><yoff>]]]\n";
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
     reasons[n++] = "             [-print] [-printname <name>] [-printfile <file>]\n";
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
 #ifdef XRENDER
     reasons[n++] = "             [-render] [-sharp]\n";
 #endif /* XRENDER */
@@ -169,12 +169,12 @@ main(int argc, char *argv[])
 
     XtAppAddActions(app_con, actions, XtNumber(actions));
 
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
     if (userOptions.printAndExit) {
         XtCallActionProc(toplevel, "print", NULL, NULL, 0);
     }
     else
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
     {
         XtAddCallback(toplevel, XtNsaveCallback, save, NULL);
         XtAddCallback(toplevel, XtNdieCallback,  die,  NULL);
@@ -214,11 +214,11 @@ quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
     }
 }
 
-#ifdef XPRINT
+#ifdef INCLUDE_XPRINT_SUPPORT
 /*ARGSUSED*/
 static void 
 print(Widget w, XEvent *event, String *params, Cardinal *num_params)
 {
     DoPrint(w, userOptions.printername, userOptions.printfile);
 }
-#endif
+#endif /* INCLUDE_XPRINT_SUPPORT */
