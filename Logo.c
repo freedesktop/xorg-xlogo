@@ -26,7 +26,7 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86$ */
+/* $XFree86: xc/programs/xlogo/Logo.c,v 1.7 2003/12/19 02:05:40 dawes Exp $ */
 
 #include <X11/StringDefs.h>
 #include <X11/IntrinsicP.h>
