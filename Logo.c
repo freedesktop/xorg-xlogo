@@ -26,30 +26,59 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
+/* $XFree86: xc/programs/xlogo/Logo.c,v 1.6 2002/05/23 23:53:59 keithp Exp $ */
 
 #include <X11/StringDefs.h>
 #include <X11/IntrinsicP.h>
+#include <X11/Xmu/Drawing.h>
 #include "LogoP.h"
 #include <X11/extensions/shape.h>
 
+#ifdef XRENDER
+#include "RenderLogo.h"
+#endif
+
 static XtResource resources[] = {
-    {XtNforeground, XtCForeground, XtRPixel, sizeof(Pixel),
-        XtOffsetOf(LogoRec,logo.fgpixel), XtRString,
-       (XtPointer) XtDefaultForeground},
     {XtNshapeWindow, XtCShapeWindow, XtRBoolean, sizeof (Boolean),
        XtOffsetOf(LogoRec,logo.shape_window), XtRImmediate, 
        (XtPointer) FALSE},
+#ifdef XRENDER
+    {XtNrender, XtCBoolean, XtRBoolean, sizeof(Boolean),
+       XtOffsetOf(LogoRec,logo.render), XtRImmediate,
+       (XtPointer) FALSE },
+    {XtNsharp, XtCBoolean, XtRBoolean, sizeof(Boolean),
+       XtOffsetOf(LogoRec,logo.sharp), XtRImmediate,
+       (XtPointer) FALSE },
+    {XtNforeground, XtCForeground, XtRXftColor, sizeof(XftColor),
+       XtOffsetOf(LogoRec, logo.fg), XtRString,
+       (XtPointer) XtDefaultForeground},
+    {XtNbackground, XtCForeground, XtRXftColor, sizeof(XftColor),
+       XtOffsetOf(LogoRec, logo.bg), XtRString,
+       (XtPointer) XtDefaultBackground},
+#else
+    {XtNforeground, XtCForeground, XtRPixel, sizeof(Pixel),
+        XtOffsetOf(LogoRec,logo.fgpixel), XtRString,
+       (XtPointer) XtDefaultForeground},
+#endif
 };
 
-static void Initialize(), Realize(), Destroy(), Redisplay(), Resize();
-static Boolean SetValues();
+static void ClassInitialize ( void );
+static void Initialize ( Widget request, Widget new, ArgList args, 
+			 Cardinal *num_args );
+static void Destroy ( Widget gw );
+static void Realize ( Widget gw, XtValueMask *valuemaskp, 
+		      XSetWindowAttributes *attr );
+static void Resize ( Widget gw );
+static void Redisplay ( Widget gw, XEvent *event, Region region );
+static Boolean SetValues ( Widget gcurrent, Widget grequest, Widget gnew, 
+			   ArgList args, Cardinal *num_args );
 
 LogoClassRec logoClassRec = {
     { /* core fields */
     /* superclass		*/	(WidgetClass) &simpleClassRec,
     /* class_name		*/	"Logo",
     /* widget_size		*/	sizeof(LogoRec),
-    /* class_initialize		*/	NULL,
+    /* class_initialize		*/	ClassInitialize,
     /* class_part_initialize	*/	NULL,
     /* class_inited		*/	FALSE,
     /* initialize		*/	Initialize,
@@ -96,10 +125,14 @@ WidgetClass logoWidgetClass = (WidgetClass) &logoClassRec;
  *									     *
  *****************************************************************************/
 
-static void create_gcs (w)
-    LogoWidget w;
+static void 
+create_gcs(LogoWidget w)
 {
     XGCValues v;
+
+#ifdef XRENDER
+    w->logo.fgpixel = w->logo.fg.pixel;
+#endif
 
     v.foreground = w->logo.fgpixel;
     w->logo.foreGC = XtGetGC ((Widget) w, GCForeground, &v);
@@ -107,8 +140,8 @@ static void create_gcs (w)
     w->logo.backGC = XtGetGC ((Widget) w, GCForeground, &v);
 }
 
-static void check_shape (w)
-    LogoWidget w;
+static void 
+check_shape(LogoWidget w)
 {
     if (w->logo.shape_window) {
 	int event_base, error_base;
@@ -119,8 +152,8 @@ static void check_shape (w)
 }
 
 /* ARGSUSED */
-static void unset_shape (w)
-    LogoWidget w;
+static void 
+unset_shape(LogoWidget w)
 {
     XSetWindowAttributes attr;
     unsigned long mask;
@@ -141,8 +174,8 @@ static void unset_shape (w)
     w->logo.need_shaping = w->logo.shape_window;
 }
 
-static void set_shape (w)
-    LogoWidget w;
+static void 
+set_shape(LogoWidget w)
 {
     GC ones, zeros;
     Display *dpy = XtDisplay ((Widget) w);
@@ -187,14 +220,151 @@ static void set_shape (w)
  *									     *
  *****************************************************************************/
 
+#ifdef XRENDER
+
+static void
+RenderPrepare (LogoWidget w)
+{
+    if (!w->logo.draw)
+    {
+	w->logo.draw = XftDrawCreate (XtDisplay (w), XtWindow (w),
+				       DefaultVisual (XtDisplay (w),
+						      DefaultScreen(XtDisplay (w))),
+				       w->core.colormap);
+    }
+}
+
+XtConvertArgRec xftColorConvertArgs[] = {
+    {XtWidgetBaseOffset, (XtPointer)XtOffsetOf(WidgetRec, core.screen),
+     sizeof(Screen *)},
+    {XtWidgetBaseOffset, (XtPointer)XtOffsetOf(WidgetRec, core.colormap),
+     sizeof(Colormap)}
+};
+
+#define	donestr(type, value, tstr) \
+	{							\
+	    if (toVal->addr != NULL) {				\
+		if (toVal->size < sizeof(type)) {		\
+		    toVal->size = sizeof(type);			\
+		    XtDisplayStringConversionWarning(dpy, 	\
+			(char*) fromVal->addr, tstr);		\
+		    return False;				\
+		}						\
+		*(type*)(toVal->addr) = (value);		\
+	    }							\
+	    else {						\
+		static type static_val;				\
+		static_val = (value);				\
+		toVal->addr = (XPointer)&static_val;		\
+	    }							\
+	    toVal->size = sizeof(type);				\
+	    return True;					\
+	}
+
+static void
+XmuFreeXftColor (XtAppContext app, XrmValuePtr toVal, XtPointer closure,
+		 XrmValuePtr args, Cardinal *num_args)
+{
+    Screen	*screen;
+    Colormap	colormap;
+    XftColor	*color;
+    
+    if (*num_args != 2)
+    {
+	XtAppErrorMsg (app,
+		       "freeXftColor", "wrongParameters",
+		       "XtToolkitError",
+		       "Freeing an XftColor requires screen and colormap arguments",
+		       (String *) NULL, (Cardinal *)NULL);
+	return;
+    }
+
+    screen = *((Screen **) args[0].addr);
+    colormap = *((Colormap *) args[1].addr);
+    color = (XftColor *) toVal->addr;
+    XftColorFree (DisplayOfScreen (screen),
+		  DefaultVisual (DisplayOfScreen (screen),
+				 XScreenNumberOfScreen (screen)),
+		  colormap, color);
+}
+    
+static Boolean
+XmuCvtStringToXftColor(Display *dpy,
+		       XrmValue *args, Cardinal *num_args,
+		       XrmValue *fromVal, XrmValue *toVal,
+		       XtPointer *converter_data)
+{
+    char	    *spec;
+    XRenderColor    renderColor;
+    XftColor	    xftColor;
+    Screen	    *screen;
+    Colormap	    colormap;
+    
+    if (*num_args != 2)
+    {
+	XtAppErrorMsg (XtDisplayToApplicationContext (dpy),
+		       "cvtStringToXftColor", "wrongParameters",
+		       "XtToolkitError",
+		       "String to render color conversion needs screen and colormap arguments",
+		       (String *) NULL, (Cardinal *)NULL);
+	return False;
+    }
+
+    screen = *((Screen **) args[0].addr);
+    colormap = *((Colormap *) args[1].addr);
+
+    spec = (char *) fromVal->addr;
+    if (strcasecmp (spec, XtDefaultForeground) == 0)
+    {
+	renderColor.red = 0;
+	renderColor.green = 0;
+	renderColor.blue = 0;
+	renderColor.alpha = 0xffff;
+    }
+    else if (strcasecmp (spec, XtDefaultBackground) == 0)
+    {
+	renderColor.red = 0xffff;
+	renderColor.green = 0xffff;
+	renderColor.blue = 0xffff;
+	renderColor.alpha = 0xffff;
+    }
+    else if (!XRenderParseColor (dpy, spec, &renderColor))
+	return False;
+    if (!XftColorAllocValue (dpy, 
+			     DefaultVisual (dpy,
+					    XScreenNumberOfScreen (screen)),
+			     colormap,
+			     &renderColor,
+			     &xftColor))
+	return False;
+    
+    donestr (XftColor, xftColor, XtRXftColor);
+}
+
+
+#endif
+
+static void 
+ClassInitialize(void)
+{
+#ifdef XRENDER
+    XtSetTypeConverter (XtRString, XtRXftColor, 
+			XmuCvtStringToXftColor, 
+			xftColorConvertArgs, XtNumber(xftColorConvertArgs),
+			XtCacheByDisplay, XmuFreeXftColor);
+#endif
+}
+
 /* ARGSUSED */
-static void Initialize (request, new, args, num_args)
-    Widget request, new;
-    ArgList args;
-    Cardinal *num_args;
+static void 
+Initialize(Widget request, Widget new, ArgList args, Cardinal *num_args)
 {
     LogoWidget w = (LogoWidget)new;
 
+#ifdef XRENDER
+    w->logo.draw = 0;
+    w->logo.fgpixel = w->logo.fg.pixel;
+#endif
     if (w->core.width < 1) w->core.width = 100;
     if (w->core.height < 1) w->core.height = 100;
 
@@ -204,8 +374,8 @@ static void Initialize (request, new, args, num_args)
     w->logo.need_shaping = w->logo.shape_window;
 }
 
-static void Destroy (gw)
-    Widget gw;
+static void 
+Destroy(Widget gw)
 {
     LogoWidget w = (LogoWidget) gw;
     if (w->logo.foreGC) {
@@ -218,10 +388,8 @@ static void Destroy (gw)
     }
 }
 
-static void Realize (gw, valuemaskp, attr)
-    Widget gw;
-    XtValueMask *valuemaskp;
-    XSetWindowAttributes *attr;
+static void 
+Realize(Widget gw, XtValueMask *valuemaskp, XSetWindowAttributes *attr)
 {
     LogoWidget w = (LogoWidget) gw;
 
@@ -234,8 +402,8 @@ static void Realize (gw, valuemaskp, attr)
 	(gw, valuemaskp, attr);
 }
 
-static void Resize (gw)
-    Widget gw;
+static void 
+Resize(Widget gw)
 {
     LogoWidget w = (LogoWidget) gw;
 
@@ -243,27 +411,45 @@ static void Resize (gw)
 }
 
 /* ARGSUSED */
-static void Redisplay (gw, event, region)
-    Widget gw;
-    XEvent *event;		/* unused */
-    Region region;		/* unused */
+static void 
+Redisplay(Widget gw, XEvent *event, Region region)
 {
     LogoWidget w = (LogoWidget) gw;
 
     if (w->logo.shape_window) {
 	if (w->logo.need_shaping) set_shape (w);  /* may change shape flag */
     }
-    if (!w->logo.shape_window)
-      XmuDrawLogo(XtDisplay(w), XtWindow(w), w->logo.foreGC, w->logo.backGC,
-		  0, 0, (unsigned int) w->core.width,
-		  (unsigned int) w->core.height);
+    if (!w->logo.shape_window) {
+#ifdef XRENDER
+	if (w->logo.render)
+	{
+	    RenderPrepare (w);
+
+	    XClearWindow (XtDisplay(w), XtWindow(w));
+	    RenderLogo (XtDisplay(w), PictOpOver,
+			XftDrawSrcPicture (w->logo.draw, &w->logo.fg),
+			XftDrawPicture (w->logo.draw),
+			XRenderFindStandardFormat (XtDisplay (w),
+						   w->logo.sharp ?
+						   PictStandardA1:
+						   PictStandardA8),
+			0, 0, (unsigned int) w->core.width,
+			(unsigned int) w->core.height);
+	}
+	else
+#endif
+	{
+	    XmuDrawLogo (XtDisplay(w), XtWindow(w), w->logo.foreGC, w->logo.backGC,
+			 0, 0, (unsigned int) w->core.width,
+			 (unsigned int) w->core.height);
+	}
+    }
 }
 
 /* ARGSUSED */
-static Boolean SetValues (gcurrent, grequest, gnew, args, num_args)
-    Widget gcurrent, grequest, gnew;
-    ArgList args;
-    Cardinal *num_args;
+static Boolean 
+SetValues (Widget gcurrent, Widget grequest, Widget gnew, 
+	   ArgList args, Cardinal *num_args)
 {
     LogoWidget current = (LogoWidget) gcurrent;
     LogoWidget new = (LogoWidget) gnew;

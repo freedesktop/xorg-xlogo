@@ -25,6 +25,9 @@ in this Software without prior written authorization from The Open Group.
  *
  */
 
+/* $XFree86: xc/programs/xlogo/xlogo.c,v 3.9 2002/05/23 23:53:59 keithp Exp $ */
+
+#include <stdio.h>
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
 #include "Logo.h"
@@ -32,12 +35,17 @@ in this Software without prior written authorization from The Open Group.
 #ifdef XKB
 #include <X11/extensions/XKBbells.h>
 #endif
+#include <stdlib.h>
 
-extern void exit();
-static void quit();
+static void quit(Widget w, XEvent *event, String *params, 
+		 Cardinal *num_params);
 
 static XrmOptionDescRec options[] = {
 { "-shape", "*shapeWindow", XrmoptionNoArg, (XPointer) "on" },
+#ifdef XRENDER
+{"-render", "*render",XrmoptionNoArg, "TRUE"},
+{"-sharp", "*sharp", XrmoptionNoArg, "TRUE"},
+#endif
 };
 
 static XtActionsRec actions[] = {
@@ -52,17 +60,15 @@ String fallback_resources[] = {
     NULL,
 };
 
-static void die(w, client_data, call_data)
-    Widget	w;
-    XtPointer	client_data, call_data;
+static void 
+die(Widget w, XtPointer client_data, XtPointer call_data)
 {
     XCloseDisplay(XtDisplay(w));
     exit(0);
 }
 
-static void save(w, client_data, call_data)
-    Widget w;
-    XtPointer client_data, call_data;
+static void 
+save(Widget w, XtPointer client_data, XtPointer call_data)
 {
     return;
 }
@@ -71,21 +77,25 @@ static void save(w, client_data, call_data)
  * Report the syntax for calling xlogo.
  */
 
-static void Syntax(toplevel, call)
-    Widget toplevel;
-    char *call;
+static void 
+Syntax(Widget toplevel, char *call)
 {
     Arg arg;
     SmcConn connection;
-    String reasons[6];
-    int i, num_reasons = 6;
+    String reasons[7];
+    int i, num_reasons = 7;
 
     reasons[0] = "Usage: ";
     reasons[1] = call;
     reasons[2] = " [-fg <color>] [-bg <color>] [-rv] [-bw <pixels>] [-bd <color>]\n";
     reasons[3] = "             [-d [<host>]:[<vs>]]\n";
     reasons[4] = "             [-g [<width>][x<height>][<+-><xoff>[<+-><yoff>]]]\n";
-    reasons[5] = "             [-shape]\n\n";
+#ifdef XRENDER
+    reasons[5] = "             [-render] [-sharp]\n";
+#else
+    reasons[5] = "";
+#endif
+    reasons[6] = "             [-shape]\n\n";
 
     XtSetArg(arg, XtNconnection, &connection);
     XtGetValues(toplevel, &arg, (Cardinal)1);
@@ -98,10 +108,8 @@ static void Syntax(toplevel, call)
     exit(1);
 }
 
-void 
-main(argc, argv)
-int argc;
-char **argv;
+int 
+main(int argc, char *argv[])
 {
     Widget toplevel;
     XtAppContext app_con;
@@ -126,14 +134,12 @@ char **argv;
     (void) XSetWMProtocols (XtDisplay(toplevel), XtWindow(toplevel),
                             &wm_delete_window, 1);
     XtAppMainLoop(app_con);
+    exit(0);
 }
 
 /*ARGSUSED*/
-static void quit(w, event, params, num_params)
-    Widget w;
-    XEvent *event;
-    String *params;
-    Cardinal *num_params;
+static void 
+quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
 {
     Arg arg;
 
@@ -151,3 +157,4 @@ static void quit(w, event, params, num_params)
 	die(w, NULL, NULL);
     }
 }
+
