@@ -161,7 +161,8 @@ void DoPrint(Widget toplevel, const char *printername, const char *toFile)
     int            plist_count;         /* number of entries in |plist|-array */
     Display       *pdpy        = NULL;
     XPContext      pcontext    = None;
-    long           dpi         = 0;
+    long           dpi_x       = 0L,
+                   dpi_y       = 0L;
 
     if (apd->isPrinting) {
         fprintf(stderr, "%s: Already busy with printing.\n", ProgramName);
@@ -196,7 +197,7 @@ void DoPrint(Widget toplevel, const char *printername, const char *toFile)
     XpSetContext(pdpy, pcontext);   
 
     /* Get default printer resolution */   
-    if (XpuGetResolution(pdpy, pcontext, &dpi) != 1) {
+    if (XpuGetResolution(pdpy, pcontext, &dpi_x, &dpi_y) != 1) {
         fprintf(stderr, "%s: No default resolution for printer '%s'\n", ProgramName, printername);
         XpuClosePrinterDisplay(pdpy, pcontext);
         return;
