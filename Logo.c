@@ -1,3 +1,4 @@
+/* $XdotOrg: xc/programs/xlogo/Logo.c,v 1.1.4.2.4.1 2004/03/04 17:49:14 eich Exp $ */
 /* $Xorg: Logo.c,v 1.4 2001/02/09 02:05:54 xorgcvs Exp $ */
 /*
 
@@ -33,6 +34,7 @@ from The Open Group.
 #include <X11/Xmu/Drawing.h>
 #include "LogoP.h"
 #include <X11/extensions/shape.h>
+#include <X11/Xos.h>
 
 #ifdef XRENDER
 #include "RenderLogo.h"
