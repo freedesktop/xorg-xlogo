@@ -111,12 +111,35 @@ PageSetupCB(Widget widget, XtPointer client_data, XtPointer call_data)
 
 void FinishPrinting(AppPrintData *p)
 {
+    char *scr;
+
     if (p->printtofile_handle) {
         if (XpuWaitForPrintFileChild(p->printtofile_handle) != XPGetDocFinished) {
             fprintf(stderr, "%s: Error while printing to file.\n", ProgramName);
         }
         p->printtofile_handle = NULL;
     }   
+
+    /* Job completed, check if there are any messages from the spooler command */
+    scr = XpGetOneAttribute(p->pdpy, p->pcontext, XPJobAttr, "xp-spooler-command-results");
+    if( scr )
+    {
+      if( strlen(scr) > 0 )
+      {
+        const char *msg = XpuCompoundTextToXmb(p->pdpy, scr);
+        if( msg )
+        {
+          Msg(("Spooler command returned '%s'.\n", msg));
+          XpuFreeXmbString(msg);
+        }
+        else
+        {
+          Msg(("Spooler command returned '%s' (unconverted).\n", scr));
+        }
+      }
+
+      XFree((void *)scr);
+    }
 
     if (p->printshell) {
         XtDestroyWidget(p->printshell);
