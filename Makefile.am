@@ -21,8 +21,8 @@
 
 bin_PROGRAMS = xlogo
 
-xlogo_CFLAGS = $(DEP_CFLAGS)
-xlogo_LDADD = $(DEP_LIBS)
+xlogo_CFLAGS = $(XLOGO_CFLAGS)
+xlogo_LDADD = $(XLOGO_LIBS)
 
 xlogo_SOURCES =	\
         Logo.c \
