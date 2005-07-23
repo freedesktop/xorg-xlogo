@@ -52,7 +52,9 @@ APPDEFAULTFILES = \
         XLogo-co
 
 
-$(APPDEFAULTFILES): %: %.ad
+SUFFIXES = .ad
+
+.ad:
 	cp $< $@
 
 appdefault_DATA = $(APPDEFAULTFILES)
