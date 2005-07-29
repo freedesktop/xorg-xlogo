@@ -21,7 +21,7 @@ dnl
 dnl Process this file with autoconf to create configure.
 
 AC_PREREQ([2.57])
-AC_INIT(xlogo,[7.0], [xorg@freedesktop.org],xlogo)
+AC_INIT(xlogo,[0.99.0], [https://bugs.freedesktop.org/enter_bug.cgi?product=xorg],xlogo)
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
@@ -47,5 +47,7 @@ XLOGO_LIBS="$XLOGO_LIBS $XRENDER_LIBS"
 
 AC_SUBST(XLOGO_CFLAGS)
 AC_SUBST(XLOGO_LIBS)
+
+XORG_RELEASE_VERSION
 
 AC_OUTPUT([Makefile])
