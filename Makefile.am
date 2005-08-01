@@ -39,7 +39,7 @@ xlogo_SOURCES += \
         print.h 
 endif
 
-dist_man_MANS = \
+dist_man1_MANS = \
         xlogo.man
 
 # App default files  (*.ad)
