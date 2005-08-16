@@ -40,10 +40,25 @@ if test "x$xaw_use_xprint" = "xyes" ; then
    XLOGO_LIBS="$XLOGO_LIBS $XPRINT_UTIL_LIBS"
 fi
 
-PKG_CHECK_MODULES(XRENDER, xrender)
+# Use render & xft2 to draw logo?
 
-XLOGO_CFLAGS="$XLOGO_CFLAGS $XRENDER_CFLAGS"
-XLOGO_LIBS="$XLOGO_LIBS $XRENDER_LIBS"
+AC_ARG_WITH(render, 
+	AC_HELP_STRING([--with-xrender], [Use Xrender & Xft2 to draw logo]), 
+	USE_RENDER="$withval", USE_RENDER="try")
+
+if test "x$USE_RENDER" = "xtry" ; then
+	PKG_CHECK_EXISTS([xrender xft], USE_RENDER="yes", USE_RENDER="no")
+fi
+
+if test "x$USE_RENDER" = "xyes" ; then
+	PKG_CHECK_MODULES(XRENDER, xrender)
+	PKG_CHECK_MODULES(XFT, xft)
+
+	AC_DEFINE(XRENDER, 1, [Define to 1 to use Xrender & Xft2 to draw logo])
+
+	XLOGO_CFLAGS="$XLOGO_CFLAGS $XRENDER_CFLAGS $XFT_CFLAGS"
+	XLOGO_LIBS="$XLOGO_LIBS $XRENDER_LIBS $XFT_LIBS"
+fi
 
 AC_SUBST(XLOGO_CFLAGS)
 AC_SUBST(XLOGO_LIBS)
