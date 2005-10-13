@@ -1,3 +1,4 @@
+# $Id$
 # 
 #  Copyright 2005  Red Hat, Inc.
 # 
@@ -49,7 +50,7 @@ appdefaultdir = $(sysconfdir)/X11/app-defaults
 
 APPDEFAULTFILES = \
         XLogo \
-        XLogo-co
+        XLogo-color
 
 
 SUFFIXES = .ad
