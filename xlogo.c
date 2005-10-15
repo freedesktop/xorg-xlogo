@@ -27,6 +27,9 @@ in this Software without prior written authorization from The Open Group.
 
 /* $XFree86: xc/programs/xlogo/xlogo.c,v 3.7 2001/07/25 15:05:26 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
