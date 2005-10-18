@@ -45,7 +45,7 @@ appman_SOURCES = \
 
 # App default files  (*.ad)
 
-appdefaultdir = $(sysconfdir)/X11/app-defaults
+appdefaultdir = $(libdir)/X11/app-defaults
 
 
 APPDEFAULTFILES = \
