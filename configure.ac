@@ -67,6 +67,10 @@ XLOGO_LIBS="$XLOGO_LIBS $XEXT_LIBS"
 AC_SUBST(XLOGO_CFLAGS)
 AC_SUBST(XLOGO_LIBS)
 
+PKG_CHECK_MODULES(APPDEFS, xt)
+appdefaultdir=$(pkg-config --variable=appdefaultdir xt)
+AC_SUBST(appdefaultdir)
+
 XORG_MANPAGE_SECTIONS
 XORG_RELEASE_VERSION
 
