@@ -49,8 +49,8 @@ appdefaultdir = @appdefaultdir@
 
 
 APPDEFAULTFILES = \
-        XLogo \
-        XLogo-color
+        app-defaults/XLogo \
+        app-defaults/XLogo-color
 
 
 SUFFIXES = .ad
