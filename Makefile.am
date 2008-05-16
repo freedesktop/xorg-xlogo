@@ -56,7 +56,7 @@ APPDEFAULTFILES = \
 SUFFIXES = .ad
 
 .ad:
-	[ -d "$(builddir)/app-defaults" ] || mkdir "$(builddir)/app-defaults"
+	[ -d app-defaults ] || mkdir app-defaults
 	cp $< $@
 
 appdefault_DATA = $(APPDEFAULTFILES)
