@@ -20,3 +20,7 @@ stamp-h1
 xlogo
 xlogo.1
 *~
+*.o
+xlogo-*.tar.*
+ChangeLog
+tags

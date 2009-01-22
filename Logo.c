@@ -239,7 +239,7 @@ RenderPrepare (LogoWidget w)
     }
 }
 
-XtConvertArgRec xftColorConvertArgs[] = {
+static XtConvertArgRec xftColorConvertArgs[] = {
     {XtWidgetBaseOffset, (XtPointer)XtOffsetOf(WidgetRec, core.screen),
      sizeof(Screen *)},
     {XtWidgetBaseOffset, (XtPointer)XtOffsetOf(WidgetRec, core.colormap),
@@ -367,7 +367,7 @@ Initialize(Widget request, Widget new, ArgList args, Cardinal *num_args)
     LogoWidget w = (LogoWidget)new;
 
 #ifdef XRENDER
-    w->logo.draw = 0;
+    w->logo.draw = NULL;
     w->logo.fgpixel = w->logo.fg.pixel;
 #endif
     if (w->core.width < 1) w->core.width = 100;

@@ -82,7 +82,7 @@ XLogoResourceData userOptions;
 
 #define Offset(field) XtOffsetOf(XLogoResourceData, field)
 
-XtResource resources[] = {
+static XtResource resources[] = {
   {"verbose",   "Verbose",   XtRBoolean, sizeof(Boolean), Offset(verbose),      XtRImmediate, (XtPointer)False},
   {"quiet",     "Quiet",     XtRBoolean, sizeof(Boolean), Offset(quiet),        XtRImmediate, (XtPointer)False},
 #ifdef INCLUDE_XPRINT_SUPPORT
@@ -93,7 +93,7 @@ XtResource resources[] = {
 };
 
 
-String fallback_resources[] = {
+static String fallback_resources[] = {
     "*iconPixmap:    xlogo32",
     "*iconMask:      xlogo32",
     "*baseTranslations: #override \\"
