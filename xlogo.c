@@ -150,7 +150,7 @@ Syntax(Widget toplevel)
 	SmcCloseConnection(connection, n, reasons);
     else {
 	for (i=0; i < n; i++)
-	    printf(reasons[i]);
+	    printf("%s", reasons[i]);
     }
     exit(EXIT_FAILURE);
 }
