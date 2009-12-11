@@ -1,6 +1,5 @@
 /*
- * $Xorg: xlogo.c,v 1.4 2001/02/09 02:05:54 xorgcvs Exp $
- *
+
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -22,10 +21,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
- *
- */
 
-/* $XFree86: xc/programs/xlogo/xlogo.c,v 3.7 2001/07/25 15:05:26 dawes Exp $ */
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -106,13 +103,13 @@ static String fallback_resources[] = {
     NULL,
 };
 
-static void 
+static void
 die(Widget w, XtPointer client_data, XtPointer call_data)
 {
     XtAppSetExitFlag(XtWidgetToApplicationContext(w));
 }
 
-static void 
+static void
 save(Widget w, XtPointer client_data, XtPointer call_data)
 {
     return;
@@ -122,7 +119,7 @@ save(Widget w, XtPointer client_data, XtPointer call_data)
  * Report the syntax for calling xlogo.
  */
 
-static void 
+static void
 Syntax(Widget toplevel)
 {
     Arg arg;
@@ -146,7 +143,7 @@ Syntax(Widget toplevel)
 
     XtSetArg(arg, XtNconnection, &connection);
     XtGetValues(toplevel, &arg, (Cardinal)1);
-    if (connection) 
+    if (connection)
 	SmcCloseConnection(connection, n, reasons);
     else {
 	for (i=0; i < n; i++)
@@ -155,7 +152,7 @@ Syntax(Widget toplevel)
     exit(EXIT_FAILURE);
 }
 
-int 
+int
 main(int argc, char *argv[])
 {
     Widget toplevel;
@@ -164,13 +161,13 @@ main(int argc, char *argv[])
     ProgramName = argv[0];
 
     toplevel = XtOpenApplication(&app_con, "XLogo",
-				 options, XtNumber(options), 
+				 options, XtNumber(options),
 				 &argc, argv, fallback_resources,
 				 sessionShellWidgetClass, NULL, ZERO);
     if (argc != 1)
 	Syntax(toplevel);
 
-    XtGetApplicationResources(toplevel, (XtPointer)&userOptions, resources, 
+    XtGetApplicationResources(toplevel, (XtPointer)&userOptions, resources,
                               XtNumber(resources), NULL, 0);
 
     XtAppAddActions(app_con, actions, XtNumber(actions));
@@ -200,12 +197,12 @@ main(int argc, char *argv[])
 }
 
 /*ARGSUSED*/
-static void 
+static void
 quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
 {
     Arg arg;
-    
-    if (event->type == ClientMessage && 
+
+    if (event->type == ClientMessage &&
 	(Atom)event->xclient.data.l[0] != wm_delete_window) {
 #ifdef XKB
 	XkbStdBell(XtDisplay(w), XtWindow(w), 0, XkbBI_BadValue);
@@ -222,7 +219,7 @@ quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
 
 #ifdef INCLUDE_XPRINT_SUPPORT
 /*ARGSUSED*/
-static void 
+static void
 print(Widget w, XEvent *event, String *params, Cardinal *num_params)
 {
     DoPrint(w, userOptions.printername, userOptions.printfile);
