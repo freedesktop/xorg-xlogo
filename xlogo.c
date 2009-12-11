@@ -33,9 +33,6 @@ in this Software without prior written authorization from The Open Group.
 #include "xlogo.h"
 #include "Logo.h"
 #include <X11/Xaw/Cardinals.h>
-#ifdef INCLUDE_XPRINT_SUPPORT
-#include "print.h"
-#endif /* INCLUDE_XPRINT_SUPPORT */
 #ifdef XKB
 #include <X11/extensions/XKBbells.h>
 #endif
@@ -46,9 +43,6 @@ in this Software without prior written authorization from The Open Group.
 const char *ProgramName;    /* program name (from argv[0]) */
 
 static void quit(Widget w,  XEvent *event, String *params, Cardinal *num_params);
-#ifdef INCLUDE_XPRINT_SUPPORT
-static void print(Widget w, XEvent *event, String *params, Cardinal *num_params);
-#endif /* INCLUDE_XPRINT_SUPPORT */
 
 static XrmOptionDescRec options[] = {
 { "-shape", "*shapeWindow", XrmoptionNoArg, (XPointer) "on" },
@@ -58,18 +52,10 @@ static XrmOptionDescRec options[] = {
 #endif
 {"-v",         "Verbose",     XrmoptionNoArg,  "TRUE"},
 {"-q",         "Quiet",       XrmoptionNoArg,  "TRUE"},
-#ifdef INCLUDE_XPRINT_SUPPORT
-{"-print",     "Print",       XrmoptionNoArg,  "TRUE"},
-{"-printer",   "printer",     XrmoptionSepArg, NULL},
-{"-printfile", "printFile",   XrmoptionSepArg, NULL},
-#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 static XtActionsRec actions[] = {
     {"quit",	quit },
-#ifdef INCLUDE_XPRINT_SUPPORT
-    {"print",	print}
-#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 static Atom wm_delete_window;
@@ -82,11 +68,6 @@ XLogoResourceData userOptions;
 static XtResource resources[] = {
   {"verbose",   "Verbose",   XtRBoolean, sizeof(Boolean), Offset(verbose),      XtRImmediate, (XtPointer)False},
   {"quiet",     "Quiet",     XtRBoolean, sizeof(Boolean), Offset(quiet),        XtRImmediate, (XtPointer)False},
-#ifdef INCLUDE_XPRINT_SUPPORT
-  {"print",     "Print",     XtRBoolean, sizeof(Boolean), Offset(printAndExit), XtRImmediate, (XtPointer)False},
-  {"printer",   "Printer",   XtRString,  sizeof(String),  Offset(printername),  XtRImmediate, (XtPointer)NULL},
-  {"printFile", "PrintFile", XtRString,  sizeof(String),  Offset(printfile),    XtRImmediate, (XtPointer)NULL}
-#endif /* INCLUDE_XPRINT_SUPPORT */
 };
 
 
@@ -94,12 +75,7 @@ static String fallback_resources[] = {
     "*iconPixmap:    xlogo32",
     "*iconMask:      xlogo32",
     "*baseTranslations: #override \\"
-#ifdef INCLUDE_XPRINT_SUPPORT
-                        "\t<Key>q: quit()\\n\\"
-                        "\t<Key>p: print()",
-#else /* !INCLUDE_XPRINT_SUPPORT */
                         "\t<Key>q: quit()",
-#endif /* !INCLUDE_XPRINT_SUPPORT */
     NULL,
 };
 
@@ -133,9 +109,6 @@ Syntax(Widget toplevel)
     reasons[n++] = "             [-v] [-q]\n";
     reasons[n++] = "             [-d [<host>]:[<vs>]]\n";
     reasons[n++] = "             [-g [<width>][x<height>][<+-><xoff>[<+-><yoff>]]]\n";
-#ifdef INCLUDE_XPRINT_SUPPORT
-    reasons[n++] = "             [-print] [-printname <name>] [-printfile <file>]\n";
-#endif /* INCLUDE_XPRINT_SUPPORT */
 #ifdef XRENDER
     reasons[n++] = "             [-render] [-sharp]\n";
 #endif /* XRENDER */
@@ -172,24 +145,16 @@ main(int argc, char *argv[])
 
     XtAppAddActions(app_con, actions, XtNumber(actions));
 
-#ifdef INCLUDE_XPRINT_SUPPORT
-    if (userOptions.printAndExit) {
-        XtCallActionProc(toplevel, "print", NULL, NULL, 0);
-    }
-    else
-#endif /* INCLUDE_XPRINT_SUPPORT */
-    {
-        XtAddCallback(toplevel, XtNsaveCallback, save, NULL);
-        XtAddCallback(toplevel, XtNdieCallback,  die,  NULL);
-        XtOverrideTranslations
-          (toplevel, XtParseTranslationTable ("<Message>WM_PROTOCOLS: quit()"));
-        XtCreateManagedWidget("xlogo", logoWidgetClass, toplevel, NULL, ZERO);
-        XtRealizeWidget(toplevel);
-        wm_delete_window = XInternAtom(XtDisplay(toplevel), "WM_DELETE_WINDOW",
-                                       False);
-        (void) XSetWMProtocols (XtDisplay(toplevel), XtWindow(toplevel),
-                                &wm_delete_window, 1);
-    }
+    XtAddCallback(toplevel, XtNsaveCallback, save, NULL);
+    XtAddCallback(toplevel, XtNdieCallback,  die,  NULL);
+    XtOverrideTranslations
+	(toplevel, XtParseTranslationTable ("<Message>WM_PROTOCOLS: quit()"));
+    XtCreateManagedWidget("xlogo", logoWidgetClass, toplevel, NULL, ZERO);
+    XtRealizeWidget(toplevel);
+    wm_delete_window = XInternAtom(XtDisplay(toplevel), "WM_DELETE_WINDOW",
+				   False);
+    (void) XSetWMProtocols (XtDisplay(toplevel), XtWindow(toplevel),
+			    &wm_delete_window, 1);
 
     XtAppMainLoop(app_con);
 
@@ -217,11 +182,3 @@ quit(Widget w, XEvent *event, String *params, Cardinal *num_params)
     }
 }
 
-#ifdef INCLUDE_XPRINT_SUPPORT
-/*ARGSUSED*/
-static void
-print(Widget w, XEvent *event, String *params, Cardinal *num_params)
-{
-    DoPrint(w, userOptions.printername, userOptions.printfile);
-}
-#endif /* INCLUDE_XPRINT_SUPPORT */
