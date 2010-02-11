@@ -20,7 +20,7 @@
 
 bin_PROGRAMS = xlogo
 
-AM_CFLAGS = $(XLOGO_CFLAGS)
+AM_CFLAGS = $(XLOGO_CFLAGS) $(CWARNFLAGS)
 xlogo_LDADD = $(XLOGO_LIBS)
 
 xlogo_SOURCES =	\
