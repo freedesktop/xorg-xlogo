@@ -38,7 +38,7 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 # Checks for pkg-config packages
-PKG_CHECK_MODULES(XLOGO, sm xaw7 xt)
+PKG_CHECK_MODULES(XLOGO, sm xaw7 xmu xt x11)
 
 # Use render & xft2 to draw logo?
 
