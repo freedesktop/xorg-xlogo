@@ -37,8 +37,8 @@ AM_CONFIG_HEADER(config.h)
 AC_PROG_CC
 AC_PROG_INSTALL
 
-# Checks for pkg-config packages
-PKG_CHECK_MODULES(XLOGO, sm xaw7 xmu xt x11)
+# Base set of required pkg-config packages
+XLOGO_DEPS="sm xaw7 xmu xt xext x11"
 
 # Use render & xft2 to draw logo?
 
@@ -51,21 +51,12 @@ if test "x$USE_RENDER" = "xtry" ; then
 fi
 
 if test "x$USE_RENDER" = "xyes" ; then
-	PKG_CHECK_MODULES(XRENDER, xrender)
-	PKG_CHECK_MODULES(XFT, xft)
+	XLOGO_DEPS="xft xrender $XLOGO_DEPS"
 
 	AC_DEFINE(XRENDER, 1, [Define to 1 to use Xrender & Xft2 to draw logo])
-
-	XLOGO_CFLAGS="$XLOGO_CFLAGS $XRENDER_CFLAGS $XFT_CFLAGS"
-	XLOGO_LIBS="$XLOGO_LIBS $XRENDER_LIBS $XFT_LIBS"
 fi
 
-PKG_CHECK_MODULES(XEXT, xext)
-XLOGO_CFLAGS="$XLOGO_CFLAGS $XEXT_CFLAGS"
-XLOGO_LIBS="$XLOGO_LIBS $XEXT_LIBS"
-
-AC_SUBST(XLOGO_CFLAGS)
-AC_SUBST(XLOGO_LIBS)
+PKG_CHECK_MODULES(XLOGO, $XLOGO_DEPS)
 
 PKG_CHECK_MODULES(APPDEFS, xt)
 xt_appdefaultdir=`$PKG_CONFIG --variable=appdefaultdir xt`
