@@ -34,9 +34,6 @@ XORG_DEFAULT_OPTIONS
 
 AM_CONFIG_HEADER(config.h)
 
-AC_PROG_CC
-AC_PROG_INSTALL
-
 # Base set of required pkg-config packages
 XLOGO_DEPS="sm xaw7 xmu xt xext x11"
 
