@@ -53,6 +53,7 @@ if test "x$USE_RENDER" = "xyes" ; then
 
 	AC_DEFINE(XRENDER, 1, [Define to 1 to use Xrender & Xft2 to draw logo])
 fi
+AM_CONDITIONAL([USE_RENDER], [test "x$USE_RENDER" = "xyes"])
 
 PKG_CHECK_MODULES(XLOGO, $XLOGO_DEPS)
 

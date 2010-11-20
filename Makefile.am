@@ -27,10 +27,14 @@ xlogo_SOURCES =	\
         Logo.c \
         Logo.h \
         LogoP.h \
-        RenderLogo.c \
-        RenderLogo.h \
         xlogo.c \
         xlogo.h
+
+if USE_RENDER
+xlogo_SOURCES += \
+        RenderLogo.c \
+        RenderLogo.h
+endif
 
 appman_PRE = \
         xlogo.man
