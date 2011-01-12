@@ -33,7 +33,7 @@ XORG_MACROS_VERSION(1.8)
 XORG_DEFAULT_OPTIONS
 
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 # Base set of required pkg-config packages
 XLOGO_DEPS="sm xaw7 xmu xt xext x11"
