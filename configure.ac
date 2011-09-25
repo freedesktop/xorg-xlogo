@@ -36,7 +36,7 @@ XORG_DEFAULT_OPTIONS
 AC_CONFIG_HEADERS([config.h])
 
 # Base set of required pkg-config packages
-XLOGO_DEPS="sm xaw7 xmu xt xext x11"
+XLOGO_DEPS="sm xaw7 xmu xt >= 1.0 xext x11"
 
 # Use render & xft2 to draw logo?
 
